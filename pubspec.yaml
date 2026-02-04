@@ -1,0 +1,63 @@
+name: lumiwrite
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  
+  # Core
+  flutter_rust_bridge: 2.11.1
+  flutter_riverpod: ^2.4.9
+  path_provider: ^2.1.2
+  intl: any # Force resolution
+  
+  # UI
+  super_editor: ^0.3.0-dev.48
+  # appflowy_editor: ^6.0.0
+  google_fonts: ^6.1.0
+  rust_lib_lumiwrite:
+    path: rust_builder
+  file_picker: ^8.3.7
+  highlight: ^0.7.0
+
+dependency_overrides:
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  integration_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.14.1
+  msix: ^3.16.13
+
+flutter:
+  uses-material-design: true
+
+flutter_launcher_icons:
+  android: false
+  ios: false
+  image_path: "app.png"
+  macos:
+    generate: false
+  windows:
+    generate: true
+    image_path: "app.png"
+
+msix_config:
+  display_name: LumiWrite
+  publisher_display_name: LumiWrite
+  identity_name: com.lumiwrite.app
+  msix_version: 1.0.0.0
+  logo_path: app.png
+  file_extension: .md, .markdown, .txt
+  output_path: build/windows/msix
