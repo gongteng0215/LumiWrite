@@ -1,10 +1,12 @@
-# LumiWrite
+# LumiWrite ✨
 
-LumiWrite is a local-first, lightweight, high-performance Markdown editor.
+![LumiWrite Logo](app.png)
+
+LumiWrite is a local-first, lightweight, high-performance Markdown editor. 📝⚡
 
 > This project is currently in MVP development.
 
-## Implemented Features (2026-02-04)
+## Implemented Features (2026-02-04) ✅
 - Markdown basics (H1-H6, paragraphs, blockquotes, lists, tasks)
 - Inline styles (bold, italic, strikethrough, highlight)
 - Code blocks with syntax highlighting + language selection
@@ -14,7 +16,7 @@ LumiWrite is a local-first, lightweight, high-performance Markdown editor.
 - Undo/redo + configurable hotkeys (hotkeys.json)
 - Theme follows system (Light/Dark)
 
-## Not Yet Implemented
+## Not Yet Implemented ⏳
 - Hybrid editing (source/preview switching)
 - Paste images + assets management
 - Rust notify file watching
@@ -22,14 +24,14 @@ LumiWrite is a local-first, lightweight, high-performance Markdown editor.
 - Export (HTML/PDF/long image)
 - Windows/macOS packaging
 
-## Tech Stack
+## Tech Stack 🧰
 - Flutter
 - super_editor
 - Rust
 - flutter_rust_bridge
 - highlight
 
-## Quick Start
+## Quick Start 🚀
 
 ### Prerequisites
 - Flutter SDK (stable)
@@ -55,7 +57,7 @@ LumiWrite is a local-first, lightweight, high-performance Markdown editor.
    flutter run
    ```
 
-### App Icon
+### App Icon 🎨
 Place your icon PNG at the project root as `app.png`, and make sure
 `flutter_launcher_icons.image_path` in `pubspec.yaml` points to it.
 
@@ -70,7 +72,7 @@ Rebuild Windows:
 flutter build windows --release
 ```
 
-### Portable Package (Recommended)
+### Portable Package (Recommended) 📦
 The portable build output is located at `build/windows/x64/runner/Release/`.
 Zip the whole directory for distribution.
 
@@ -83,7 +85,7 @@ Outputs:
 - `dist/LumiWrite_Portable/` (ready to run)
 - `dist/LumiWrite_Portable.zip` (ready to share)
 
-### File Association Scripts (.md / .markdown)
+### File Association Scripts (.md / .markdown) 🧷
 The portable package includes two scripts:
 - `register_md.ps1`: associate `.md/.markdown` with `LumiWrite.exe`
 - `unregister_md.ps1`: remove the association
@@ -94,7 +96,7 @@ powershell -ExecutionPolicy Bypass -File .\register_md.ps1
 powershell -ExecutionPolicy Bypass -File .\unregister_md.ps1
 ```
 
-## Hotkey Configuration
+## Hotkey Configuration ⌨️
 Default hotkeys:
 - Ctrl+Z: Undo
 - Ctrl+Y: Redo
@@ -114,7 +116,7 @@ You can edit `hotkeys.json` in the project root, for example:
 ```
 Leave a value empty to disable that hotkey.
 
-## Roadmap
+## Roadmap 🗺️
 - [x] Basic Markdown input and rendering
 - [x] File open/save
 - [x] Sidebar file tree + outline
@@ -128,5 +130,5 @@ Leave a value empty to disable that hotkey.
 - [ ] Export (HTML/PDF/long image)
 - [ ] Packaging (Windows/macOS)
 
-## License
+## License 📄
 MIT
