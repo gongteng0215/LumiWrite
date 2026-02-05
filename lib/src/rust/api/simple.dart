@@ -6,11 +6,13 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-String greet({required String name}) =>
+Future<String> greet({required String name}) =>
     RustLib.instance.api.crateApiSimpleGreet(name: name);
 
-String readFile({required String path}) =>
+Future<void> initApp() => RustLib.instance.api.crateApiSimpleInitApp();
+
+Future<String> readFile({required String path}) =>
     RustLib.instance.api.crateApiSimpleReadFile(path: path);
 
-void saveFile({required String path, required String content}) =>
+Future<void> saveFile({required String path, required String content}) =>
     RustLib.instance.api.crateApiSimpleSaveFile(path: path, content: content);

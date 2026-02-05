@@ -46,4 +46,7 @@ app.*.map.json
 
 .trae/
 dist/
-installer/
+target/
+需求文档.md
+TASK_LIST.md
+rulers.md

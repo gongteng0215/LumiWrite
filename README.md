@@ -1,4 +1,4 @@
-﻿# LumiWrite
+﻿﻿# LumiWrite
 
 LumiWrite 是一款本地优先、轻量、高性能的 Markdown 编辑器。
 
@@ -46,7 +46,7 @@ LumiWrite 是一款本地优先、轻量、高性能的 Markdown 编辑器。
    flutter pub get
    ```
 3. 生成 Rust 绑定（如需）
-   如果修改了 `native/` 目录代码，需要重新生成 Dart 绑定：
+   如果修改了 `native/` 目录代码（或误删后重建），需要重新生成绑定：
    ```bash
    flutter_rust_bridge_codegen generate
    ```
@@ -61,7 +61,7 @@ LumiWrite 是一款本地优先、轻量、高性能的 Markdown 编辑器。
 生成图标：
 ```bash
 flutter pub get
-flutter pub run flutter_launcher_icons:main
+dart run flutter_launcher_icons
 ```
 
 Windows 重新构建：

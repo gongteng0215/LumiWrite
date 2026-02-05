@@ -54,9 +54,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
       RustLibWire.fromExternalLibrary;
 
   @override
-  Future<void> executeRustInitializers() async {
-    await api.crateApiSimpleInitApp();
-  }
+  Future<void> executeRustInitializers() async {}
 
   @override
   ExternalLibraryLoaderConfig get defaultExternalLibraryLoaderConfig =>
@@ -77,13 +75,16 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
-  String crateApiSimpleGreet({required String name});
+  Future<String> crateApiSimpleGreet({required String name});
 
   Future<void> crateApiSimpleInitApp();
 
-  String crateApiSimpleReadFile({required String path});
+  Future<String> crateApiSimpleReadFile({required String path});
 
-  void crateApiSimpleSaveFile({required String path, required String content});
+  Future<void> crateApiSimpleSaveFile({
+    required String path,
+    required String content,
+  });
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -95,13 +96,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
-  String crateApiSimpleGreet({required String name}) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
+  Future<String> crateApiSimpleGreet({required String name}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 1,
+            port: port_,
+          );
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -145,13 +151,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "init_app", argNames: []);
 
   @override
-  String crateApiSimpleReadFile({required String path}) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
+  Future<String> crateApiSimpleReadFile({required String path}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(path, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 3)!;
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -168,14 +179,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "read_file", argNames: ["path"]);
 
   @override
-  void crateApiSimpleSaveFile({required String path, required String content}) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
+  Future<void> crateApiSimpleSaveFile({
+    required String path,
+    required String content,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(path, serializer);
           sse_encode_String(content, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,

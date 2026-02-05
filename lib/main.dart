@@ -191,7 +191,7 @@ Enjoy writing!
 
   Future<void> _loadFile(String path) async {
     try {
-      final content = readFile(path: path);
+      final content = await readFile(path: path);
       setState(() {
         _isLoading = true;
       });
@@ -561,7 +561,7 @@ Enjoy writing!
     if (path != null) {
       try {
         final content = serializeDocumentToMarkdown(_doc);
-        saveFile(path: path, content: content);
+        await saveFile(path: path, content: content);
         setState(() {
           _currentFilePath = path;
         });
@@ -860,8 +860,9 @@ Enjoy writing!
                 IconButton(
                   icon: const Icon(Icons.bolt),
                   tooltip: 'Test Rust',
-                  onPressed: () {
-                    final message = greet(name: "LumiWrite User");
+                  onPressed: () async {
+                    final message = await greet(name: "LumiWrite User");
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(message)),
                     );
