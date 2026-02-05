@@ -1,106 +1,108 @@
-﻿﻿# LumiWrite
+# LumiWrite
 
-LumiWrite 是一款本地优先、轻量、高性能的 Markdown 编辑器。
+LumiWrite is a local-first, lightweight, high-performance Markdown editor.
 
-> 当前处于 MVP 开发阶段。
+> This project is currently in MVP development.
 
-## 已实现功能（2026-02-04）
-- Markdown 基础格式渲染（H1-H6、段落、引用、列表、任务）
-- 行内样式（加粗/斜体/删除线/高亮）
-- 代码块语法高亮 + 语言选择
-- 表格渲染与编辑（多行单元格、行列插入/删除）
-- 侧边栏文件树 + 目录大纲（可点击跳转）
-- 文件打开/保存（Ctrl+S）
-- 撤销/重做 + 热键配置（hotkeys.json）
-- 主题跟随系统（Light/Dark）
+## Implemented Features (2026-02-04)
+- Markdown basics (H1-H6, paragraphs, blockquotes, lists, tasks)
+- Inline styles (bold, italic, strikethrough, highlight)
+- Code blocks with syntax highlighting + language selection
+- Tables: render + edit (multi-line cells, insert/delete rows/cols)
+- Sidebar file tree + document outline (click to jump)
+- Open/save files (Ctrl+S)
+- Undo/redo + configurable hotkeys (hotkeys.json)
+- Theme follows system (Light/Dark)
 
-## 待实现功能
-- 混合编辑（源码/预览切换）
-- 图片粘贴与 assets 管理
-- Rust notify 文件监听
-- 自定义标题栏
-- 导出（HTML/PDF/长图）
-- Windows/macOS 打包发布
+## Not Yet Implemented
+- Hybrid editing (source/preview switching)
+- Paste images + assets management
+- Rust notify file watching
+- Custom title bar
+- Export (HTML/PDF/long image)
+- Windows/macOS packaging
 
-## 技术栈
+## Tech Stack
 - Flutter
 - super_editor
 - Rust
 - flutter_rust_bridge
 - highlight
 
-## 快速开始
+## Quick Start
 
-### 前置要求
-- Flutter SDK（稳定版）
-- Rust 工具链
+### Prerequisites
+- Flutter SDK (stable)
+- Rust toolchain
 
-### 安装与运行
-1. 克隆仓库
+### Install & Run
+1. Clone the repo
    ```bash
    git clone https://github.com/yourusername/lumiwrite.git
    cd lumiwrite
    ```
-2. 安装 Flutter 依赖
+2. Install Flutter dependencies
    ```bash
    flutter pub get
    ```
-3. 生成 Rust 绑定（如需）
-   如果修改了 `native/` 目录代码（或误删后重建），需要重新生成绑定：
+3. Generate Rust bindings (when needed)
+   If you modify or rebuild `native/`, regenerate Dart bindings:
    ```bash
    flutter_rust_bridge_codegen generate
    ```
-4. 运行应用
+4. Run
    ```bash
    flutter run
    ```
 
-### 应用图标
-将图标 PNG 放在项目根目录的 `app.png`，并确保 `pubspec.yaml` 中 `flutter_launcher_icons.image_path` 指向该文件。
+### App Icon
+Place your icon PNG at the project root as `app.png`, and make sure
+`flutter_launcher_icons.image_path` in `pubspec.yaml` points to it.
 
-生成图标：
+Generate icons:
 ```bash
 flutter pub get
 dart run flutter_launcher_icons
 ```
 
-Windows 重新构建：
+Rebuild Windows:
 ```bash
 flutter build windows --release
 ```
 
-### 便携包打包与分发（推荐）
-Windows 便携版打包目录在 `build/windows/x64/runner/Release/`。建议将整个目录打包成 zip 分发。
+### Portable Package (Recommended)
+The portable build output is located at `build/windows/x64/runner/Release/`.
+Zip the whole directory for distribution.
 
-项目内已提供一键打包脚本：
+One-click packaging script:
 ```bash
 powershell -ExecutionPolicy Bypass -File installer\package_portable.ps1
 ```
 
-输出产物：
-- `dist/LumiWrite_Portable/`（可直接运行）
-- `dist/LumiWrite_Portable.zip`（可直接分发）
+Outputs:
+- `dist/LumiWrite_Portable/` (ready to run)
+- `dist/LumiWrite_Portable.zip` (ready to share)
 
-### 文件关联脚本（.md / .markdown）
-便携包内包含两个脚本：
-- `register_md.ps1`：关联 `.md/.markdown` 到 `LumiWrite.exe`
-- `unregister_md.ps1`：解除关联
+### File Association Scripts (.md / .markdown)
+The portable package includes two scripts:
+- `register_md.ps1`: associate `.md/.markdown` with `LumiWrite.exe`
+- `unregister_md.ps1`: remove the association
 
-使用方法（放在 `LumiWrite.exe` 同目录运行）：
+Run from the same folder as `LumiWrite.exe`:
 ```bash
 powershell -ExecutionPolicy Bypass -File .\register_md.ps1
 powershell -ExecutionPolicy Bypass -File .\unregister_md.ps1
 ```
 
-## 热键配置
-默认热键：
-- Ctrl+Z：撤销
-- Ctrl+Y：重做
-- Ctrl+S：保存
-- Ctrl+O：打开文件
-- Ctrl+Shift+O：打开文件夹
+## Hotkey Configuration
+Default hotkeys:
+- Ctrl+Z: Undo
+- Ctrl+Y: Redo
+- Ctrl+S: Save
+- Ctrl+O: Open file
+- Ctrl+Shift+O: Open folder
 
-你可以在项目根目录的 `hotkeys.json` 配置热键，例如：
+You can edit `hotkeys.json` in the project root, for example:
 ```json
 {
   "undo": "Ctrl+Z",
@@ -110,21 +112,21 @@ powershell -ExecutionPolicy Bypass -File .\unregister_md.ps1
   "openFolder": "Ctrl+Shift+O"
 }
 ```
-留空表示禁用该热键。
+Leave a value empty to disable that hotkey.
 
-## 路线图
-- [x] 基础 Markdown 输入与渲染
-- [x] 文件打开 / 保存
-- [x] 侧边栏文件树 + 目录大纲
-- [x] 代码块语法高亮 + 语言选择
-- [x] 表格渲染与编辑
-- [x] 撤销/重做 + 热键配置
-- [ ] 图片粘贴与本地存储
-- [ ] 混合编辑（源码/预览切换）
-- [ ] 文件监听（Rust notify）
-- [ ] 自定义标题栏
-- [ ] 导出（HTML/PDF/长图）
-- [ ] 打包发布（Windows/macOS）
+## Roadmap
+- [x] Basic Markdown input and rendering
+- [x] File open/save
+- [x] Sidebar file tree + outline
+- [x] Code blocks + syntax highlighting + language selection
+- [x] Table render + edit
+- [x] Undo/redo + hotkey configuration
+- [ ] Image paste + local storage
+- [ ] Hybrid editing (source/preview switch)
+- [ ] File watching (Rust notify)
+- [ ] Custom title bar
+- [ ] Export (HTML/PDF/long image)
+- [ ] Packaging (Windows/macOS)
 
 ## License
 MIT
