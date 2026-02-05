@@ -1,6 +1,8 @@
 # LumiWrite ✨
 
-![LumiWrite Logo](app.png)
+<p align="center">
+  <img src="app.png" alt="LumiWrite Logo" width="160">
+</p>
 
 LumiWrite is a local-first, lightweight, high-performance Markdown editor. 📝⚡
 
