@@ -4,6 +4,10 @@
   <img src="app.jpg" alt="LumiWrite Logo" width="160">
 </p>
 
+<p align="center">
+  <img src="screenshots/image.png" alt="LumiWrite Screenshot" width="860">
+</p>
+
 LumiWrite is a local-first, lightweight, high-performance Markdown editor. 📝⚡
 
 > This project is currently in MVP development.
