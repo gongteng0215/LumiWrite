@@ -8,12 +8,13 @@ LumiWrite is a local-first, lightweight, high-performance Markdown editor. 📝�
 
 > This project is currently in MVP development.
 
-## Implemented Features (2026-02-04) ✅
+## Implemented Features (2026-02-05) ✅
 - Markdown basics (H1-H6, paragraphs, blockquotes, lists, tasks)
 - Inline styles (bold, italic, strikethrough, highlight)
 - Code blocks with syntax highlighting + language selection
 - Tables: render + edit (multi-line cells, insert/delete rows/cols)
 - Sidebar file tree + document outline (click to jump)
+- Auto-reveal current file in the tree + highlight selection
 - Open/save files (Ctrl+S)
 - Undo/redo + configurable hotkeys (hotkeys.json)
 - Theme follows system (Light/Dark)
@@ -78,6 +79,8 @@ flutter build windows --release
 The portable build output is located at `build/windows/x64/runner/Release/`.
 Zip the whole directory for distribution.
 
+Note: Releases are currently **Windows-only**. 🪟
+
 One-click packaging script:
 ```bash
 powershell -ExecutionPolicy Bypass -File installer\package_portable.ps1
@@ -87,10 +90,25 @@ Outputs:
 - `dist/LumiWrite_Portable/` (ready to run)
 - `dist/LumiWrite_Portable.zip` (ready to share)
 
+### Windows Release Script 🏷️
+You can publish a Windows-only release to GitHub and keep the release tag
+and `pubspec.yaml` version in sync:
+```bash
+powershell -ExecutionPolicy Bypass -File installer\release_windows.ps1 -Version 0.2.0
+```
+
+To build automatically before packaging and release:
+```bash
+installer\release_windows.cmd 0.2.0 --build
+```
+
 ### File Association Scripts (.md / .markdown) 🧷
 The portable package includes two scripts:
 - `register_md.ps1`: associate `.md/.markdown` with `LumiWrite.exe`
 - `unregister_md.ps1`: remove the association
+It also includes double-clickable CMD wrappers:
+- `register_md.cmd`
+- `unregister_md.cmd`
 
 Run from the same folder as `LumiWrite.exe`:
 ```bash

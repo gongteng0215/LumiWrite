@@ -21,6 +21,12 @@ Copy-Item -Path (Join-Path $buildPath '*') -Destination $outputPath -Recurse
 
 Copy-Item -Path "$PSScriptRoot\register_md.ps1" -Destination $outputPath
 Copy-Item -Path "$PSScriptRoot\unregister_md.ps1" -Destination $outputPath
+if (Test-Path "$PSScriptRoot\register_md.cmd") {
+  Copy-Item -Path "$PSScriptRoot\register_md.cmd" -Destination $outputPath
+}
+if (Test-Path "$PSScriptRoot\unregister_md.cmd") {
+  Copy-Item -Path "$PSScriptRoot\unregister_md.cmd" -Destination $outputPath
+}
 
 $zipPath = Join-Path $OutDir "$PackageName.zip"
 if (Test-Path $zipPath) {

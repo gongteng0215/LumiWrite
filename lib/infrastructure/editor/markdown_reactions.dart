@@ -13,11 +13,13 @@ import 'package:super_editor/super_editor.dart';
 /// - `---`: Horizontal Rule
 class MarkdownInputReaction extends EditReaction {
   static final _taskListPattern = RegExp(r'^(?:\*|-|\+)\s+\[([ xX])\]\s$');
-  static final _codeFencePattern = RegExp(r'^```\\s*([\\w+-]*)\\s*$');
+  static final _codeFencePattern = RegExp(r'^\s*```\s*([\w+-]*)\s*$');
 
   @override
   void react(EditContext editorContext, RequestDispatcher requestDispatcher, List<EditEvent> changeList) {
-    for (final change in changeList) {
+    // Copy to avoid concurrent modification when reactions dispatch edits.
+    final changes = List<EditEvent>.from(changeList);
+    for (final change in changes) {
       if (change is DocumentEdit && change.change is TextInsertionEvent) {
         final event = change.change as TextInsertionEvent;
         // Trigger on Space
@@ -35,27 +37,28 @@ class MarkdownInputReaction extends EditReaction {
     if (selection == null || !selection.isCollapsed) return;
 
     final node = context.document.getNodeById(selection.extent.nodeId);
-    if (node is! ParagraphNode) return;
+    if (node is! TextNode) return;
 
     final text = node.text.toPlainText();
+    final trimmedText = text.trimRight();
     
     // Check if the paragraph contains ONLY the trigger pattern
     // (e.g. user typed "# " at the start of a new line)
     
-    if (_isHeader(text)) {
+    if (_isHeader(text) && node is ParagraphNode) {
       final level = text.trim().length;
       _convertToHeader(context, dispatcher, node, level);
-    } else if (_isTaskList(text)) {
+    } else if (_isTaskList(text) && node is ParagraphNode) {
       _convertToTask(context, dispatcher, node, isComplete: _isTaskListChecked(text));
-    } else if (_isUnorderedList(text)) {
+    } else if (_isUnorderedList(text) && node is ParagraphNode) {
       _convertToUnorderedList(context, dispatcher, node);
-    } else if (_isOrderedList(text)) {
+    } else if (_isOrderedList(text) && node is ParagraphNode) {
       _convertToOrderedList(context, dispatcher, node);
-    } else if (_isBlockquote(text)) {
+    } else if (_isBlockquote(text) && node is ParagraphNode) {
       _convertToBlockquote(context, dispatcher, node);
-    } else if (_isCodeBlock(text)) {
+    } else if (_isCodeFence(trimmedText)) {
       _convertToCodeBlock(context, dispatcher, node);
-    } else if (_isHr(text)) {
+    } else if (_isHr(text) && node is ParagraphNode) {
       _convertToHr(context, dispatcher, node);
     }
   }
@@ -245,16 +248,24 @@ class MarkdownInputReaction extends EditReaction {
     ]);
   }
 
-  void _convertToCodeBlock(EditContext context, RequestDispatcher dispatcher, ParagraphNode node) {
-    final text = node.text.toPlainText();
+  void _convertToCodeBlock(EditContext context, RequestDispatcher dispatcher, TextNode node) {
+    final text = node.text.toPlainText().trimRight();
     final language = _extractCodeFenceLanguage(text);
 
     final metadata = <String, dynamic>{
       'blockType': codeAttribution,
     };
+    if (node is ListItemNode) {
+      metadata['listItemCodeBlock'] = true;
+    }
     if (language != null && language.isNotEmpty) {
       metadata['language'] = language;
     }
+    final indent = node is ParagraphNode
+        ? node.indent
+        : node is ListItemNode
+            ? node.indent
+            : 0;
 
     dispatcher.execute([
       ChangeSelectionRequest(
@@ -272,6 +283,7 @@ class MarkdownInputReaction extends EditReaction {
         newNode: ParagraphNode(
           id: node.id,
           text: AttributedText(''),
+          indent: indent,
           metadata: metadata,
         ),
       ),

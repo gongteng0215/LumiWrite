@@ -1,10 +1,21 @@
 param(
-  [string]$ExePath = "$PSScriptRoot\LumiWrite.exe"
+  [string]$ExePath = "$PSScriptRoot\LumiWrite.exe",
+  [switch]$Pause
 )
+
+$ErrorActionPreference = "Stop"
+
+function Finish-And-Exit([int]$code) {
+  if ($Pause) {
+    Write-Host ""
+    Read-Host "Press Enter to exit"
+  }
+  exit $code
+}
 
 if (-not (Test-Path $ExePath)) {
   Write-Host "Exe not found: $ExePath"
-  exit 1
+  Finish-And-Exit 1
 }
 
 $progId = "LumiWrite.Markdown"
@@ -23,3 +34,4 @@ New-Item -Path "HKCU:\Software\Classes\$progId\shell\open\command" -Force | Out-
 Set-ItemProperty -Path "HKCU:\Software\Classes\$progId\shell\open\command" -Name "(Default)" -Value $openCmd
 
 Write-Host "Done. File association set for .md/.markdown."
+Finish-And-Exit 0

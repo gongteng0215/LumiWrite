@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:super_editor/super_editor.dart';
 // ignore: implementation_imports
 import 'package:super_editor/src/undo_redo.dart';
+// ignore: implementation_imports
+import 'package:super_editor/src/infrastructure/serialization/markdown/markdown_inline_upstream_plugin.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'src/rust/frb_generated.dart';
@@ -85,6 +87,8 @@ class _EditorPageState extends State<EditorPage> {
   String? _currentFolderPath;
   String? _selectedFilePath;
   List<FileTreeNode> _fileTree = [];
+  final Set<String> _expandedDirs = {};
+  int _fileTreeKeyIndex = 0;
   List<OutlineEntry> _outlineItems = [];
   DocumentChangeListener? _docChangeListener;
   VoidCallback? _composerListener;
@@ -94,6 +98,8 @@ class _EditorPageState extends State<EditorPage> {
   bool _isLoadingTree = false;
   int _editorKeyIndex = 0;
   SidebarSection _sidebarSection = SidebarSection.files;
+  final MarkdownInlineUpstreamSyntaxPlugin _markdownInlinePlugin =
+      MarkdownInlineUpstreamSyntaxPlugin();
 
   @override
   void initState() {
@@ -229,6 +235,7 @@ Enjoy writing!
       });
       // Apply initial syntax highlighting after editor is ready
       highlightAllCodeBlocks(_docEditor, _doc);
+      await _ensureFileVisibleInTree(path);
     } catch (e) {
       if (mounted) {
         _showError('Failed to read file: $e');
@@ -259,6 +266,63 @@ Enjoy writing!
         _openFolder();
         break;
     }
+  }
+
+  void _handleAppMenuAction(AppMenuAction action) {
+    switch (action) {
+      case AppMenuAction.openFolder:
+        _openFolder();
+        break;
+      case AppMenuAction.openFile:
+        _openFile();
+        break;
+      case AppMenuAction.save:
+        _saveFile();
+        break;
+      case AppMenuAction.hotkeys:
+        _showHotkeySettings();
+        break;
+    }
+  }
+
+  Widget _buildAppMenuButton(BuildContext context) {
+    final headerStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        );
+    return PopupMenuButton<AppMenuAction>(
+      tooltip: 'Menu',
+      icon: const Icon(Icons.menu),
+      onSelected: _handleAppMenuAction,
+      itemBuilder: (context) => [
+        PopupMenuItem<AppMenuAction>(
+          enabled: false,
+          child: Text('File', style: headerStyle),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: AppMenuAction.openFolder,
+          child: Text('Open Folder'),
+        ),
+        const PopupMenuItem(
+          value: AppMenuAction.openFile,
+          child: Text('Open File'),
+        ),
+        const PopupMenuItem(
+          value: AppMenuAction.save,
+          child: Text('Save'),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<AppMenuAction>(
+          enabled: false,
+          child: Text('Settings', style: headerStyle),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: AppMenuAction.hotkeys,
+          child: Text('Hotkeys'),
+        ),
+      ],
+    );
   }
 
   List<SuperEditorKeyboardAction> _buildKeyboardActions() {
@@ -389,6 +453,8 @@ Enjoy writing!
       _currentFolderPath = path;
       _isLoadingTree = true;
       _fileTree = [];
+      _expandedDirs.clear();
+      _fileTreeKeyIndex++;
     });
 
     try {
@@ -443,6 +509,90 @@ Enjoy writing!
       }
     }
     return nodes;
+  }
+
+  Future<void> _ensureFileVisibleInTree(String filePath) async {
+    final fileDir = Directory(filePath).parent.path;
+    final rootPath = _currentFolderPath;
+    final shouldSwitchRoot =
+        rootPath == null || !_isPathWithin(rootPath, filePath);
+
+    if (shouldSwitchRoot) {
+      if (!mounted) return;
+      setState(() {
+        _currentFolderPath = fileDir;
+        _isLoadingTree = true;
+        _fileTree = [];
+        _expandedDirs.clear();
+        _fileTreeKeyIndex++;
+      });
+
+      try {
+        final nodes = await _buildFileTree(fileDir);
+        if (!mounted) return;
+        setState(() {
+          _fileTree = nodes;
+          _isLoadingTree = false;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _isLoadingTree = false;
+        });
+        _showError('Failed to read folder: $e');
+      }
+    }
+
+    final activeRoot = _currentFolderPath;
+    if (activeRoot == null || !_isPathWithin(activeRoot, filePath)) {
+      return;
+    }
+
+    final dirsToExpand = _ancestorDirsForFile(activeRoot, filePath);
+    if (dirsToExpand.isNotEmpty) {
+      setState(() {
+        _expandedDirs.addAll(dirsToExpand);
+        _fileTreeKeyIndex++;
+      });
+    }
+  }
+
+  bool _isPathWithin(String root, String filePath) {
+    final normalizedRoot = _normalizePath(root).toLowerCase();
+    final normalizedPath = _normalizePath(filePath).toLowerCase();
+    if (normalizedPath == normalizedRoot) return true;
+    if (!normalizedPath.startsWith(normalizedRoot)) return false;
+    final separator = Platform.pathSeparator;
+    return normalizedPath.length > normalizedRoot.length &&
+        normalizedPath[normalizedRoot.length] == separator;
+  }
+
+  List<String> _ancestorDirsForFile(String root, String filePath) {
+    final rootLower = _normalizePath(root).toLowerCase();
+    final dirs = <String>[];
+    var current = Directory(filePath).parent;
+    while (true) {
+      final currentLower = _normalizePath(current.path).toLowerCase();
+      if (currentLower == rootLower) {
+        break;
+      }
+      if (!currentLower.startsWith(rootLower)) {
+        return const [];
+      }
+      dirs.add(current.path);
+      final parent = current.parent;
+      if (parent.path == current.path) {
+        break;
+      }
+      current = parent;
+    }
+    return dirs.reversed.toList();
+  }
+
+  String _normalizePath(String path) {
+    return path
+        .replaceAll('/', Platform.pathSeparator)
+        .replaceAll('\\', Platform.pathSeparator);
   }
 
   void _attachDocumentListener() {
@@ -615,9 +765,17 @@ Enjoy writing!
     final bgColor = isLight ? const Color(0xFFF7F7F7) : const Color(0xFF1E1E1E);
     final borderColor = isLight ? const Color(0xFFE0E0E0) : const Color(0xFF2A2A2A);
     final folderName = _currentFolderPath == null ? 'No Folder' : _basename(_currentFolderPath!);
+    final segmentedButtonStyle = ButtonStyle(
+      visualDensity: const VisualDensity(horizontal: -2, vertical: -3),
+      padding: const MaterialStatePropertyAll(EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
+      textStyle: MaterialStatePropertyAll(
+        Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 12),
+      ),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
 
     return Container(
-      width: 260,
+      width: 320,
       decoration: BoxDecoration(
         color: bgColor,
         border: Border(
@@ -628,45 +786,44 @@ Enjoy writing!
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    folderName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      folderName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.folder_open),
-                  onPressed: _openFolder,
-                  tooltip: 'Open Folder',
-                ),
-              ],
-            ),
+                ],
+              ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: SegmentedButton<SidebarSection>(
-              segments: const [
-                ButtonSegment(
-                  value: SidebarSection.files,
-                  icon: Icon(Icons.folder),
-                  label: Text('Files'),
-                ),
-                ButtonSegment(
-                  value: SidebarSection.outline,
-                  icon: Icon(Icons.view_list),
-                  label: Text('Outline'),
-                ),
-              ],
-              selected: {_sidebarSection},
-              onSelectionChanged: (selection) {
-                setState(() {
-                  _sidebarSection = selection.first;
-                });
-              },
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<SidebarSection>(
+                style: segmentedButtonStyle,
+                segments: const [
+                  ButtonSegment(
+                    value: SidebarSection.files,
+                    icon: Icon(Icons.folder, size: 16),
+                    label: Text('Files', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false),
+                  ),
+                  ButtonSegment(
+                    value: SidebarSection.outline,
+                    icon: Icon(Icons.view_list, size: 16),
+                    label: Text('Outline', maxLines: 1, overflow: TextOverflow.ellipsis, softWrap: false),
+                  ),
+                ],
+                selected: {_sidebarSection},
+                onSelectionChanged: (selection) {
+                  setState(() {
+                    _sidebarSection = selection.first;
+                  });
+                },
+              ),
             ),
           ),
           Expanded(
@@ -693,7 +850,8 @@ Enjoy writing!
     }
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      key: ValueKey(_fileTreeKeyIndex),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       children: _fileTree.map((node) => _buildTreeNode(node, depth: 0)).toList(),
     );
   }
@@ -709,25 +867,44 @@ Enjoy writing!
     }
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       children: _outlineItems.map((entry) => _buildOutlineItem(context, entry)).toList(),
     );
   }
 
   Widget _buildTreeNode(FileTreeNode node, {required int depth}) {
-    final indent = depth * 12.0;
+    final indent = depth * 8.0;
+    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11.5);
     if (node.isDirectory) {
-      return Padding(
-        padding: EdgeInsets.only(left: indent),
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      final isExpanded = _expandedDirs.contains(node.path);
+      return Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ListTileTheme(
+          dense: true,
+          minLeadingWidth: 16,
+          horizontalTitleGap: 6,
+          minVerticalPadding: 0,
           child: ExpansionTile(
-            key: PageStorageKey<String>(node.path),
-            leading: const Icon(Icons.folder),
+            key: ValueKey('${node.path}-$isExpanded'),
+            initiallyExpanded: isExpanded,
+            onExpansionChanged: (expanded) {
+              setState(() {
+                if (expanded) {
+                  _expandedDirs.add(node.path);
+                } else {
+                  _expandedDirs.remove(node.path);
+                }
+              });
+            },
+            tilePadding: EdgeInsets.only(left: indent + 4, right: 6),
+            childrenPadding: const EdgeInsets.only(left: 4),
+            visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+            leading: const Icon(Icons.folder, size: 14),
             title: Text(
               node.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              style: textStyle,
             ),
             children: node.children
                 .map((child) => _buildTreeNode(child, depth: depth + 1))
@@ -738,19 +915,22 @@ Enjoy writing!
     }
 
     final isSelected = node.path == _selectedFilePath;
-    return Padding(
-      padding: EdgeInsets.only(left: indent),
-      child: ListTile(
-        dense: true,
-        leading: const Icon(Icons.description),
-        title: Text(
-          node.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        selected: isSelected,
-        onTap: () => _loadFile(node.path),
+    return ListTile(
+      dense: true,
+      visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+      contentPadding: EdgeInsets.only(left: indent + 4, right: 6),
+      minLeadingWidth: 16,
+      horizontalTitleGap: 6,
+      minVerticalPadding: 0,
+      leading: const Icon(Icons.description, size: 14),
+      title: Text(
+        node.name,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: textStyle,
       ),
+      selected: isSelected,
+      onTap: () => _loadFile(node.path),
     );
   }
 
@@ -853,43 +1033,11 @@ Enjoy writing!
         },
         child: Focus(
           autofocus: true,
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(_currentFilePath ?? 'Untitled'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.bolt),
-                  tooltip: 'Test Rust',
-                  onPressed: () async {
-                    final message = await greet(name: "LumiWrite User");
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(message)),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.folder_open),
-                  onPressed: _openFolder,
-                  tooltip: 'Open Folder',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.file_open),
-                  onPressed: _openFile,
-                  tooltip: 'Open',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.save),
-                  onPressed: _saveFile,
-                  tooltip: 'Save',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.keyboard),
-                  onPressed: _showHotkeySettings,
-                  tooltip: 'Hotkeys',
-                ),
-              ],
-            ),
+        child: Scaffold(
+          appBar: AppBar(
+            leading: _buildAppMenuButton(context),
+            title: Text(_currentFilePath ?? 'Untitled'),
+          ),
             body: Row(
               children: [
                 _buildSidebar(context),
@@ -902,6 +1050,7 @@ Enjoy writing!
                           documentLayoutKey: _docLayoutKey,
                           stylesheet: lumiWriteStylesheet(context),
                           keyboardActions: _buildKeyboardActions(),
+                          plugins: {_markdownInlinePlugin},
                           componentBuilders: [
                             LumiHeaderComponentBuilder(_docEditor),
                             LumiBlockquoteComponentBuilder(_docEditor),
@@ -976,3 +1125,10 @@ class OutlineEntry {
 }
 
 enum SidebarSection { files, outline }
+
+enum AppMenuAction {
+  openFolder,
+  openFile,
+  save,
+  hotkeys,
+}
